@@ -1,32 +1,16 @@
-def gcd(a, b):
-    if(b == 0):
-        return a
-    else:
-        return gcd(b, a % b)
-
-
-def cons(a, b):
-    return lambda f: f(a, b)
-
-
-def car(x):
-    return x(lambda a, b: a)
-
-
-def cdr(x):
-    return x(lambda a, b: b)
+import utility
 
 
 def make_rat(n, d):
-    return cons(n, d)
+    return utility.cons(n, d)
 
 
 def numer(x):
-    return car(x)
+    return utility.car(x)
 
 
 def denom(x):
-    return cdr(x)
+    return utility.cdr(x)
 
 
 def add_rat(x, y):
@@ -54,8 +38,8 @@ def equal_rat(x, y):
 def make_rat(n, d):
     if d < 0:
         return make_rat(-n, -d)
-    g = gcd(n, d)
-    return cons(n // g, d // g)
+    g = utility.gcd(n, d)
+    return utility.cons(n // g, d // g)
 
 
 def print_rat(x):
