@@ -1,6 +1,13 @@
 import utility
 
 
+def gcd(a, b):
+    if(b == 0):
+        return a
+    else:
+        return gcd(b, a % b)
+
+
 def make_rat(n, d):
     return utility.cons(n, d)
 
@@ -38,7 +45,7 @@ def equal_rat(x, y):
 def make_rat(n, d):
     if d < 0:
         return make_rat(-n, -d)
-    g = utility.gcd(n, d)
+    g = gcd(n, d)
     return utility.cons(n // g, d // g)
 
 
