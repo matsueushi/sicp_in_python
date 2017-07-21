@@ -2,23 +2,13 @@
 """for utility functions"""
 
 import unittest
-from types import FunctionType
 
 
 def cons(a, b):
-    """
-    :type a: object
-    :type b: object
-    :rtype: FunctionType
-    """
     return lambda x: x(a, b)
 
 
 def car(x):
-    """
-    :type x: FunctionType | None
-    :rtype: object | FunctionType
-    """
     if x is None:
         return None
     else:
@@ -26,10 +16,6 @@ def car(x):
 
 
 def cdr(x):
-    """
-    :type x: FunctionType | None
-    :rtype: object | FunctionType
-    """
     if x is None:
         return None
     else:
@@ -115,29 +101,28 @@ def list_ref(items, n):
     return list_ref_iter(items, n)
 
 
-def is_same_list(list1, list2):
-    """
-    :type list1: FunctionType | None
-    :type list2: FunctionType | None
-    :rtype: bool
-    """
-    def is_same_list_iter(x, y):
-        """
-        :type x: FunctionType | None
-        :type y: FunctionType | None
-        :rtype: bool
-        """
-        if is_null(x) and is_null(y):
-            return True
-        elif car(x) != car(y):
-            return False
-        else:
-            return is_same_list_iter(cdr(x), cdr(y))
+def is_list(x):
+    return callable(x)
 
-    if length(list1) != length(list2):
+
+def is_same_list(lst1, lst2):
+    def is_same_element(x1, x2):
+        if is_list(x1) == is_list(x2):
+            if is_list(x1):
+                return is_same_list(x1, x2)
+            else:
+                return x1 == x2
+        else:
+            return False
+
+    if length(lst1) != length(lst2):
         return False
+    elif length(lst1) == 0:
+        return True
     else:
-        return is_same_list_iter(list1, list2)
+        is_same_car = is_same_element(car(lst1), car(lst2))
+        is_same_cdr = is_same_list(cdr(lst1), cdr(lst2))
+        return is_same_car and is_same_cdr
 
 
 def append(list1, list2):
@@ -159,33 +144,67 @@ def map(proc, items):
     :type items: FunctionType | None
     :rtype: FunctionType | None
     """
-    if is_null(items):
-        return
-    else:
-        return cons(proc(car(items)), map(proc, cdr(items)))
-
-
-def list_to_str(l):
-    def one_element_to_str(l):
-        if callable(car(l)):
-            return list_to_str(car(l)) + ' '
+    def map_to_element(proc, x):
+        if is_list(x):
+            return list(map(proc, x))
         else:
-            return str(car(l)) + ' '
+            return list(proc(x))
 
-    def to_str_impl(l):
-        string = ''
-        if not is_null(l):
-            if length(l) > 0:
-                string = one_element_to_str(l)
-            if length(l) > 1:
-                string = string + to_str_impl(cdr(l))
-        return string
-
-    return '( ' + to_str_impl(l) + ')'
+    if is_null(items):
+        return None
+    else:
+        #print('tree: {0}'.format(list_to_str(tree)))
+        lhs = map_to_element(proc, car(items))
+        rhs = map(proc, cdr(items))
+        return append(lhs, rhs)
 
 
-def print_list(l):
-    print(list_to_str(l))
+def make_interval(a, b):
+    return cons(a, b)
+
+
+def lower_bound(interval):
+    return car(interval)
+
+
+def upper_bound(interval):
+    return cdr(interval)
+
+
+def print_interval(interval):
+    print("[{0}, {1}]".format(lower_bound(interval), upper_bound(interval)))
+
+
+def list_to_str(lst):
+    def one_element_to_str(x):
+        if is_list(x):
+            return list_to_str(x) + ' '
+        else:
+            return str(x) + ' '
+
+    def to_str_impl(lst):
+        if not is_null(lst):
+            return one_element_to_str(car(lst)) + to_str_impl(cdr(lst))
+        else:
+            return ''
+
+    return '( ' + to_str_impl(lst) + ')'
+
+
+def print_list(lst):
+    print(list_to_str(lst))
+
+
+def print_cons(lst):
+    print('( ' + str(car(lst)) + ' ' + str(cdr(lst)) + ' )')
+
+
+def accumulate(op, initial, sequence):
+    if is_null(sequence):
+        return initial
+    else:
+        return op(car(sequence),
+                  accumulate(op, initial, cdr(sequence)))
 
 
 class UnitTestOfAboveFunctions(unittest.TestCase):
@@ -233,7 +252,12 @@ class UnitTestOfAboveFunctions(unittest.TestCase):
     def test_case_7(self):
         list1 = list(1, 2, 3)
         list2 = list(1, 2, 3)
+        list12 = list(list1, list2)
+        list21 = list(list2, list1)
+        list3 = list(list(1, 2, 3), list(1, 2, 3))
         self.assertTrue(is_same_list(list1, list2))
+        self.assertTrue(is_same_list(list12, list21))
+        self.assertTrue(is_same_list(list12, list3))
 
     def test_case_8(self):
         x = list(1, 2, 3)
@@ -255,6 +279,16 @@ class UnitTestOfAboveFunctions(unittest.TestCase):
         self.assertEqual(list_to_str(e), '( 1 2 ( 3 4 ) )')
         self.assertEqual(list_to_str(f),
                          '( 7 ( 1 2 ( 3 4 ) ) ( 3 4 ) )')
+
+    def test_case10(self):
+        self.assertEqual(accumulate(lambda x, y: x + y, 0,
+                                    list(1, 2, 3, 4, 5)), 15)
+        self.assertEqual(accumulate(lambda x, y: x * y, 1,
+                                    list(1, 2, 3, 4, 5)), 120)
+        accumulate_cons = accumulate(
+            lambda x, y: cons(x, y), None, list(1, 2, 3, 4, 5))
+        self.assertTrue(is_same_list(
+            accumulate_cons, list(1, 2, 3, 4, 5)))
 
 
 if __name__ == '__main__':
